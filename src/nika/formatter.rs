@@ -20,17 +20,32 @@ impl NikaFormatter {
 
                 let entry = (0..groups)
                     .map(|group_id| {
-                        let room = &nika.rooms[&class_schedule_entry.r[0]];
-                        let subject = &nika.subjects[&class_schedule_entry.s[0]];
-                        let teacher = &nika.teachers[&class_schedule_entry.t[0]];
-                        let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
-                        let tag = if groups == 1 {
-                            format!("{lesson_number}.")
-                        } else {
-                            format!("{lesson_number}. <i>(Груп.{})</i>", group_id + 1)
+                        let important_data = {
+                            if class_schedule_entry.r[group_id].is_empty()
+                                || class_schedule_entry.s[group_id].is_empty()
+                                || class_schedule_entry.t[group_id].is_empty()
+                            {
+                                "<b>нет занятий</b>".to_string()
+                            } else {
+                                let room = &nika.rooms[&class_schedule_entry.r[group_id]];
+                                let subject = &nika.subjects[&class_schedule_entry.s[group_id]];
+                                let teacher = &nika.teachers[&class_schedule_entry.t[group_id]];
+
+                                format!("{room}: {subject} | {teacher}")
+                            }
                         };
 
-                        format!("{tag} {room}: {subject} | {teacher}")
+                        let tag = {
+                            let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
+
+                            if groups == 1 {
+                                format!("{lesson_number}.")
+                            } else {
+                                format!("{lesson_number}. <i>(Груп.{})</i>", group_id + 1)
+                            }
+                        };
+
+                        format!("{tag} {important_data}")
                     })
                     .join("\n");
 
