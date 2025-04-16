@@ -58,13 +58,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[derive(BotCommands, Clone)]
-#[command(rename_rule = "lowercase", description = "Поддерживаются эти команды:")]
+#[command(
+    rename_rule = "lowercase",
+    description = "Поддерживаются следующие команды:"
+)]
 enum Command {
     #[command(description = "отображает этот текст.")]
     Help,
-    #[command(description = "отображает меню с выбором класса.", alias = "class")]
+    #[command(
+        description = "отображает меню с выбором класса.",
+        alias = "class",
+        hide_aliases
+    )]
     Classes,
-    #[command(description = "отображает меню с выбором учителя.", alias = "teacher")]
+    #[command(
+        description = "отображает меню с выбором учителя.",
+        alias = "teacher",
+        hide_aliases
+    )]
     Teachers,
 }
 
