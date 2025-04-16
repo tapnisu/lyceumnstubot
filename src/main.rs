@@ -62,9 +62,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 enum Command {
     #[command(description = "отображает этот текст.")]
     Help,
-    #[command(description = "отображает меню с выбором класса.")]
+    #[command(description = "отображает меню с выбором класса.", alias = "class")]
     Classes,
-    #[command(description = "отображает меню с выбором учителя.")]
+    #[command(description = "отображает меню с выбором учителя.", alias = "teacher")]
     Teachers,
 }
 
