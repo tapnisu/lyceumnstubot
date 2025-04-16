@@ -24,7 +24,7 @@ pub fn make_classes_keyboard(
                 .parse::<i32>()
                 .unwrap();
 
-            let button = InlineKeyboardButton::callback(class_name, class_id);
+            let button = InlineKeyboardButton::callback(class_name, format!("class {class_id}"));
 
             Ok((grade, button))
         })
@@ -43,7 +43,9 @@ pub fn make_teachers_keyboard(nika_response: &NikaResponse) -> InlineKeyboardMar
         .teachers
         .iter()
         .sorted_by(|(_, a), (_, b)| a.cmp(b))
-        .map(|(teacher_id, teacher_name)| InlineKeyboardButton::callback(teacher_name, teacher_id))
+        .map(|(teacher_id, teacher_name)| {
+            InlineKeyboardButton::callback(teacher_name, format!("teacher {teacher_id}"))
+        })
         .chunks(3)
         .into_iter()
         .map(|chunk| chunk.collect())

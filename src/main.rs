@@ -4,6 +4,7 @@ use lyceumnstubot::{
     keyboards::{make_classes_keyboard, make_teachers_keyboard},
     nika::{client::NikaClient, formatter::NikaFormatter, response::NikaResponse},
 };
+use regex::Regex;
 use teloxide::{
     prelude::*,
     types::{InlineKeyboardMarkup, Me, ParseMode},
@@ -105,24 +106,46 @@ async fn callback_handler(
     q: CallbackQuery,
     global_data: Arc<Mutex<GlobalData>>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    bot.answer_callback_query(&q.id).await?;
+
+    let classes_re = Regex::new(r"class (.+)").unwrap();
+    let teachers_re = Regex::new(r"teachers (.+)").unwrap();
+
     let data = global_data.lock().await;
+    let query = q.data.clone().unwrap();
 
-    if let Some(ref class_id) = q.data {
-        bot.answer_callback_query(&q.id).await?;
+    if let Some(caps) = classes_re.captures(&query) {
+        if let Some(class_id) = caps.get(1) {
+            let class_schedule =
+                NikaFormatter::format_class_schedule(&data.nika_response, class_id.as_str());
 
-        let class_schedule = NikaFormatter::format_class_schedule(&data.nika_response, class_id);
-
-        if let Some(message) = q.regular_message() {
-            bot.edit_message_text(message.chat.id, message.id, class_schedule)
-                .parse_mode(ParseMode::Html)
-                .await?;
-        } else if let Some(id) = q.inline_message_id {
-            bot.edit_message_text_inline(id, class_schedule)
-                .parse_mode(ParseMode::Html)
-                .await?;
+            if let Some(message) = q.regular_message() {
+                bot.edit_message_text(message.chat.id, message.id, class_schedule)
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+            } else if let Some(id) = q.inline_message_id {
+                bot.edit_message_text_inline(id, class_schedule)
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+            }
         }
+    } else if let Some(caps) = teachers_re.captures(&query) {
+        if let Some(_teacher_id) = caps.get(1) {
+            unimplemented!();
 
-        log::info!("You chose: {}", class_id);
+            // let teacher_schedule =
+            //     NikaFormatter::format_teachers_schedule(&data.nika_response, teacher_id.as_str());
+
+            // if let Some(message) = q.regular_message() {
+            //     bot.edit_message_text(message.chat.id, message.id, teacher_schedule)
+            //         .parse_mode(ParseMode::Html)
+            //         .await?;
+            // } else if let Some(id) = q.inline_message_id {
+            //     bot.edit_message_text_inline(id, teacher_schedule)
+            //         .parse_mode(ParseMode::Html)
+            //         .await?;
+            // }
+        }
     }
 
     Ok(())
