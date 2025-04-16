@@ -5,9 +5,9 @@ use super::response::NikaResponse;
 pub struct NikaFormatter {}
 
 impl NikaFormatter {
-    // TODO: remove unwrap crap
     pub fn format_class_schedule(nika: &NikaResponse, class_id: &str) -> String {
-        nika.class_schedule
+        let mut schedule: Vec<String> = nika
+            .class_schedule
             .clone()
             .first_entry()
             .unwrap()
@@ -19,8 +19,8 @@ impl NikaFormatter {
                 let room = &nika.rooms[&class_schedule_entry.r[0]];
                 let subject = &nika.subjects[&class_schedule_entry.s[0]];
                 let teacher = &nika.teachers[&class_schedule_entry.t[0]];
-
-                let text_entry = format!("{lesson_id}. {room}: {subject} | {teacher}");
+                let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
+                let text_entry = format!("{lesson_number}. {room}: {subject} | {teacher}");
 
                 (lesson_id, text_entry)
             })
@@ -32,10 +32,14 @@ impl NikaFormatter {
                 let day = &nika.day_names[day_id];
 
                 format!(
-                    "<b>{day}</b>\n{}",
+                    "<b>{day}:</b>\n{}",
                     group.map(|(_, text_entry)| text_entry).join("\n")
                 )
             })
-            .join("\n")
+            .collect();
+
+        let class_name = nika.classes.get(class_id).unwrap();
+        schedule.insert(0, format!("<i>Расписание для {class_name}:</i>"));
+        schedule.join("\n\n")
     }
 }
