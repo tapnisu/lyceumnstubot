@@ -120,7 +120,7 @@ async fn callback_handler(
     bot.answer_callback_query(&q.id).await?;
 
     let classes_re = Regex::new(r"class (.+)").unwrap();
-    let teachers_re = Regex::new(r"teachers (.+)").unwrap();
+    let teachers_re = Regex::new(r"teacher (.+)").unwrap();
 
     let data = global_data.lock().await;
     let query = q.data.clone().unwrap();
