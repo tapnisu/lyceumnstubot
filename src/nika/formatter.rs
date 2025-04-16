@@ -16,13 +16,25 @@ impl NikaFormatter {
             .unwrap()
             .iter()
             .map(|(lesson_id, class_schedule_entry)| {
-                let room = &nika.rooms[&class_schedule_entry.r[0]];
-                let subject = &nika.subjects[&class_schedule_entry.s[0]];
-                let teacher = &nika.teachers[&class_schedule_entry.t[0]];
-                let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
-                let text_entry = format!("{lesson_number}. {room}: {subject} | {teacher}");
+                let groups = class_schedule_entry.s.len();
 
-                (lesson_id, text_entry)
+                let entry = (0..groups)
+                    .map(|group_id| {
+                        let room = &nika.rooms[&class_schedule_entry.r[0]];
+                        let subject = &nika.subjects[&class_schedule_entry.s[0]];
+                        let teacher = &nika.teachers[&class_schedule_entry.t[0]];
+                        let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
+                        let tag = if groups == 1 {
+                            format!("{lesson_number}.")
+                        } else {
+                            format!("{lesson_number}. <i>(Груп.{})</i>", group_id + 1)
+                        };
+
+                        format!("{tag} {room}: {subject} | {teacher}")
+                    })
+                    .join("\n");
+
+                (lesson_id, entry)
             })
             .chunk_by(|(lesson_id, _)| {
                 lesson_id.chars().nth(0).unwrap().to_digit(10).unwrap() as usize - 1
