@@ -1,4 +1,4 @@
-FROM rust:1.84-alpine3.21 AS builder
+FROM rust:1.86-alpine3.21 AS builder
 LABEL authors="tapnisu"
 
 WORKDIR /usr/src/lyceumnstubot
@@ -10,7 +10,7 @@ RUN apk update \
 COPY . .
 RUN cargo build --release
 
-FROM alpine:3.20 AS runner
+FROM alpine:3.21 AS runner
 
 RUN apk update \
     && apk upgrade --available \
