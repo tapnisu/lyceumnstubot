@@ -10,7 +10,7 @@ use teloxide::{
     types::{InlineKeyboardMarkup, Me, ParseMode},
     utils::command::BotCommands,
 };
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 #[derive(Clone, Debug)]
 struct GlobalData {
@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let bot_token = env::var("BOT_TOKEN")?;
     let bot = Bot::new(bot_token);
 
-    let global_data = Arc::new(Mutex::new(GlobalData::new().await));
+    let global_data = Arc::new(RwLock::new(GlobalData::new().await));
 
     let handler = dptree::entry()
         .branch(Update::filter_message().endpoint(message_handler))
@@ -83,7 +83,7 @@ async fn message_handler(
     bot: Bot,
     msg: Message,
     me: Me,
-    global_data: Arc<Mutex<GlobalData>>,
+    global_data: Arc<RwLock<GlobalData>>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     if let Some(text) = msg.text() {
         match BotCommands::parse(text, me.username()) {
@@ -92,15 +92,23 @@ async fn message_handler(
                     .await?;
             }
             Ok(Command::Classes) => {
-                let data = global_data.lock().await;
+                let classes_keyboard = {
+                    let data = global_data.read().await;
+                    data.classes_keyboard.clone()
+                };
+
                 bot.send_message(msg.chat.id, "Выберите класс:")
-                    .reply_markup(data.classes_keyboard.clone())
+                    .reply_markup(classes_keyboard.clone())
                     .await?;
             }
             Ok(Command::Teachers) => {
-                let data = global_data.lock().await;
+                let teachers_keyboard = {
+                    let data = global_data.read().await;
+                    data.teachers_keyboard.clone()
+                };
+
                 bot.send_message(msg.chat.id, "Выберите учителя:")
-                    .reply_markup(data.teachers_keyboard.clone())
+                    .reply_markup(teachers_keyboard.clone())
                     .await?;
             }
             Err(_) => {
@@ -115,20 +123,23 @@ async fn message_handler(
 async fn callback_handler(
     bot: Bot,
     q: CallbackQuery,
-    global_data: Arc<Mutex<GlobalData>>,
+    global_data: Arc<RwLock<GlobalData>>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     bot.answer_callback_query(&q.id).await?;
 
     let classes_re = Regex::new(r"class (.+)").unwrap();
     let teachers_re = Regex::new(r"teacher (.+)").unwrap();
 
-    let data = global_data.lock().await;
+    let nika = {
+        let data = global_data.read().await;
+        data.nika_response.clone()
+    };
+
     let query = q.data.clone().unwrap();
 
     if let Some(caps) = classes_re.captures(&query) {
         if let Some(class_id) = caps.get(1) {
-            let class_schedule =
-                NikaFormatter::format_class_schedule(&data.nika_response, class_id.as_str());
+            let class_schedule = NikaFormatter::format_class_schedule(&nika, class_id.as_str());
 
             if let Some(message) = q.regular_message() {
                 bot.edit_message_text(message.chat.id, message.id, class_schedule)
@@ -142,10 +153,10 @@ async fn callback_handler(
         }
     } else if let Some(caps) = teachers_re.captures(&query) {
         if let Some(_teacher_id) = caps.get(1) {
-            unimplemented!();
+            todo!();
 
             // let teacher_schedule =
-            //     NikaFormatter::format_teachers_schedule(&data.nika_response, teacher_id.as_str());
+            //     NikaFormatter::format_teachers_schedule(&nika, teacher_id.as_str());
 
             // if let Some(message) = q.regular_message() {
             //     bot.edit_message_text(message.chat.id, message.id, teacher_schedule)
