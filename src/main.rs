@@ -7,7 +7,7 @@ use lyceumnstubot::{
 use regex::Regex;
 use teloxide::{
     prelude::*,
-    types::{InlineKeyboardMarkup, Me, ParseMode},
+    types::{InlineKeyboardButton, InlineKeyboardMarkup, Me, ParseMode},
     utils::command::BotCommands,
 };
 use tokio::sync::RwLock;
@@ -140,13 +140,20 @@ async fn callback_handler(
     if let Some(caps) = classes_re.captures(&query) {
         if let Some(class_id) = caps.get(1) {
             let class_schedule = NikaFormatter::format_class_schedule(&nika, class_id.as_str());
+            let reply_markup =
+                InlineKeyboardMarkup::new(vec![vec![InlineKeyboardButton::callback(
+                    "Назад ⬅️",
+                    "classSchedule",
+                )]]);
 
             if let Some(message) = q.regular_message() {
                 bot.edit_message_text(message.chat.id, message.id, class_schedule)
+                    .reply_markup(reply_markup)
                     .parse_mode(ParseMode::Html)
                     .await?;
             } else if let Some(id) = q.inline_message_id {
                 bot.edit_message_text_inline(id, class_schedule)
+                    .reply_markup(reply_markup)
                     .parse_mode(ParseMode::Html)
                     .await?;
             }
@@ -167,6 +174,36 @@ async fn callback_handler(
             //         .parse_mode(ParseMode::Html)
             //         .await?;
             // }
+        }
+    } else if query == "classSchedule" {
+        let classes_keyboard = {
+            let data = global_data.read().await;
+            data.classes_keyboard.clone()
+        };
+
+        if let Some(message) = q.regular_message() {
+            bot.edit_message_text(message.chat.id, message.id, "Выберите класс:")
+                .reply_markup(classes_keyboard.clone())
+                .await?;
+        } else if let Some(id) = q.inline_message_id {
+            bot.edit_message_text_inline(id, "Выберите класс:")
+                .reply_markup(classes_keyboard.clone())
+                .await?;
+        }
+    } else if query == "teacherSchedule" {
+        let teachers_keyboard = {
+            let data = global_data.read().await;
+            data.teachers_keyboard.clone()
+        };
+
+        if let Some(message) = q.regular_message() {
+            bot.edit_message_text(message.chat.id, message.id, "Выберите учителя:")
+                .reply_markup(teachers_keyboard.clone())
+                .await?;
+        } else if let Some(id) = q.inline_message_id {
+            bot.edit_message_text_inline(id, "Выберите учителя:")
+                .reply_markup(teachers_keyboard.clone())
+                .await?;
         }
     }
 
