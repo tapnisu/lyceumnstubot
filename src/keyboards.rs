@@ -1,36 +1,25 @@
 use std::error::Error;
 
 use itertools::Itertools;
-use regex::Regex;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
 use crate::nika::response::NikaResponse;
 
 pub fn make_classes_keyboard(
-    nika_response: &NikaResponse,
+    nika: &NikaResponse,
 ) -> Result<InlineKeyboardMarkup, KeyboardMakerError> {
-    let grade_regex = Regex::new(r#"^(\d{1,2})([\u0430-\u0433]|(?:-[1-4]))$"#)?;
-
-    let keyboard: Vec<Vec<InlineKeyboardButton>> = nika_response
+    let keyboard: Vec<Vec<InlineKeyboardButton>> = nika
         .classes
         .iter()
         .map(|(class_id, class_name)| -> Result<_, KeyboardMakerError> {
-            let grade = grade_regex
-                .captures(class_name)
-                .ok_or(KeyboardMakerError::GradeParsing)?
-                .get(1)
-                .ok_or(KeyboardMakerError::GradeParsing)?
-                .as_str()
-                .parse::<i32>()
-                .unwrap();
-
+            let grade = nika.class_courses.get(class_id).unwrap().clone();
             let button = InlineKeyboardButton::callback(class_name, format!("class {class_id}"));
 
             Ok((grade, button))
         })
-        .collect::<Result<Vec<(i32, InlineKeyboardButton)>, KeyboardMakerError>>()?
+        .collect::<Result<Vec<(String, InlineKeyboardButton)>, KeyboardMakerError>>()?
         .into_iter()
-        .chunk_by(|(grade, _)| *grade)
+        .chunk_by(|(grade, _)| grade.clone())
         .into_iter()
         .map(|(_, group)| group.map(|(_, button)| button).collect())
         .collect();
@@ -38,8 +27,8 @@ pub fn make_classes_keyboard(
     Ok(InlineKeyboardMarkup::new(keyboard))
 }
 
-pub fn make_teachers_keyboard(nika_response: &NikaResponse) -> InlineKeyboardMarkup {
-    let keyboard: Vec<Vec<InlineKeyboardButton>> = nika_response
+pub fn make_teachers_keyboard(nika: &NikaResponse) -> InlineKeyboardMarkup {
+    let keyboard: Vec<Vec<InlineKeyboardButton>> = nika
         .teachers
         .iter()
         .sorted_by(|(_, a), (_, b)| a.cmp(b))
