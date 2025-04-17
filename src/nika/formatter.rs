@@ -1,3 +1,4 @@
+use chrono::{Duration, NaiveDate};
 use itertools::Itertools;
 
 use super::response::NikaResponse;
@@ -6,6 +7,11 @@ pub struct NikaFormatter {}
 
 impl NikaFormatter {
     pub fn format_class_schedule(nika: &NikaResponse, class_id: &str) -> String {
+        let beginning_date = {
+            let beginning = nika.periods.clone().first_entry().unwrap().get().b.clone();
+            NaiveDate::parse_from_str(&beginning, "%d.%m.%Y").unwrap()
+        };
+
         let mut schedule: Vec<String> = nika
             .class_schedule
             .clone()
@@ -54,14 +60,16 @@ impl NikaFormatter {
                 (lesson_id, entry)
             })
             .chunk_by(|(lesson_id, _)| {
-                lesson_id.chars().nth(0).unwrap().to_digit(10).unwrap() as usize - 1
+                lesson_id.chars().nth(0).unwrap().to_digit(10).unwrap() as usize
             })
             .into_iter()
             .map(|(day_id, group)| {
-                let day = &nika.day_names[day_id];
+                let date = beginning_date + Duration::days(day_id.try_into().unwrap());
 
                 format!(
-                    "<b>{day}:</b>\n{}",
+                    "<b>{} / {}:</b>\n{}",
+                    nika.day_names[day_id - 1],
+                    date.format("%d.%m.%Y"),
                     group.map(|(_, text_entry)| text_entry).join("\n")
                 )
             })
