@@ -17,6 +17,7 @@ impl NikaFormatter {
             .iter()
             .map(|(lesson_id, class_schedule_entry)| {
                 let groups = class_schedule_entry.s.len();
+                let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
 
                 let entry = (0..groups)
                     .map(|group_id| {
@@ -30,19 +31,20 @@ impl NikaFormatter {
                                 let room = &nika.rooms[&class_schedule_entry.r[group_id]];
                                 let subject = &nika.subjects[&class_schedule_entry.s[group_id]];
                                 let teacher = &nika.teachers[&class_schedule_entry.t[group_id]];
+                                let lesson_times =
+                                    nika.lesson_times.get(&lesson_number.to_string()).unwrap();
 
-                                format!("{room}: {subject} | {teacher}")
+                                format!(
+                                    "{room}: {subject} | {teacher} <code>{}-{}</code>",
+                                    lesson_times[0], lesson_times[1]
+                                )
                             }
                         };
 
-                        let tag = {
-                            let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
-
-                            if groups == 1 {
-                                format!("{lesson_number}.")
-                            } else {
-                                format!("{lesson_number}. <i>(Груп.{})</i>", group_id + 1)
-                            }
+                        let tag = if groups == 1 {
+                            format!("{lesson_number}.")
+                        } else {
+                            format!("{lesson_number}. <i>(Груп.{})</i>", group_id + 1)
                         };
 
                         format!("{tag} {important_data}")
