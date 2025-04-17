@@ -12,14 +12,13 @@ pub fn make_classes_keyboard(
         .classes
         .iter()
         .map(|(class_id, class_name)| -> Result<_, KeyboardMakerError> {
-            let grade = nika.class_courses.get(class_id).unwrap().clone();
+            let course = nika.class_courses.get(class_id).unwrap().clone();
             let button = InlineKeyboardButton::callback(class_name, format!("class {class_id}"));
-
-            Ok((grade, button))
+            Ok((course, button))
         })
         .collect::<Result<Vec<(String, InlineKeyboardButton)>, KeyboardMakerError>>()?
         .into_iter()
-        .chunk_by(|(grade, _)| grade.clone())
+        .chunk_by(|(course, _)| course.clone())
         .into_iter()
         .map(|(_, group)| group.map(|(_, button)| button).collect())
         .collect();
