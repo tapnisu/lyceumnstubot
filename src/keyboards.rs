@@ -12,7 +12,11 @@ pub fn make_classes_keyboard(
         .classes
         .iter()
         .map(|(class_id, class_name)| -> Result<_, KeyboardMakerError> {
-            let course = nika.class_courses.get(class_id).unwrap().clone();
+            let course = nika
+                .class_courses
+                .get(class_id)
+                .cloned()
+                .ok_or(KeyboardMakerError::GradeParsing)?;
             let button = InlineKeyboardButton::callback(class_name, format!("class {class_id}"));
             Ok((course, button))
         })
