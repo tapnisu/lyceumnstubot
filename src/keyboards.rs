@@ -48,7 +48,6 @@ pub fn make_teachers_keyboard(nika: &NikaResponse) -> InlineKeyboardMarkup {
 
 #[derive(Debug)]
 pub enum KeyboardMakerError {
-    Regex(regex::Error),
     GradeParsing,
 }
 
@@ -57,14 +56,7 @@ impl Error for KeyboardMakerError {}
 impl std::fmt::Display for KeyboardMakerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            KeyboardMakerError::Regex(err) => err.fmt(f),
             KeyboardMakerError::GradeParsing => write!(f, "couldn't parse grade"),
         }
-    }
-}
-
-impl From<regex::Error> for KeyboardMakerError {
-    fn from(err: regex::Error) -> KeyboardMakerError {
-        KeyboardMakerError::Regex(err)
     }
 }
