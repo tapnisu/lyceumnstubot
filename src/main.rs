@@ -1,4 +1,4 @@
-use std::{env, error::Error, sync::Arc};
+use std::{env, error::Error, sync::Arc, time::Duration};
 
 use lyceumnstubot::{
     keyboards::{make_classes_keyboard, make_teachers_keyboard},
@@ -10,7 +10,7 @@ use teloxide::{
     types::{InlineKeyboardButton, InlineKeyboardMarkup, Me, ParseMode},
     utils::command::BotCommands,
 };
-use tokio::sync::RwLock;
+use tokio::{sync::RwLock, time};
 
 #[derive(Clone, Debug)]
 struct GlobalData {
@@ -42,6 +42,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let bot = Bot::new(bot_token);
 
     let global_data = Arc::new(RwLock::new(GlobalData::new().await));
+
+    let mut interval = time::interval(Duration::from_secs(5 * 60));
+    tokio::spawn({
+        let global_data = global_data.clone();
+
+        async move {
+            loop {
+                interval.tick().await;
+                let mut data = global_data.write().await;
+                *data = GlobalData::new().await;
+            }
+        }
+    });
 
     let handler = dptree::entry()
         .branch(Update::filter_message().endpoint(message_handler))
