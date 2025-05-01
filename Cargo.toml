@@ -8,6 +8,7 @@ repository = "https://github.com/tapnisu/lyceumnstubot"
 
 [dependencies]
 chrono = "0.4"
+dotenv = "0.15"
 itertools = "0.14"
 log = "0.4"
 pretty_env_logger = "0.5"

@@ -1,5 +1,6 @@
 use std::{env, error::Error, sync::Arc, time::Duration};
 
+use dotenv::dotenv;
 use lyceumnstubot::{
     keyboards::{make_classes_keyboard, make_teachers_keyboard},
     nika::{client::NikaClient, formatter::NikaFormatter, response::NikaResponse},
@@ -37,6 +38,8 @@ impl GlobalData {
 async fn main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
     log::info!("Starting command bot...");
+
+    dotenv().ok();
 
     let bot_token = env::var("BOT_TOKEN")?;
     let bot = Bot::new(bot_token);
