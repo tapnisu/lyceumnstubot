@@ -12,7 +12,7 @@ impl NikaClient {
         let filename_regex = Regex::new(
             r#"<script type="text/javascript" src="(nika_data_\d{8}_\d{6}\.js)"></script>"#,
         )?;
-        let nika_json_regex = Regex::new(r#"(\{.+\})"#)?;
+        let nika_json_regex = Regex::new(r#"(\{.+})"#)?;
 
         let html = reqwest::get("https://lyceum.nstu.ru/rasp/schedule.html")
             .await?
@@ -44,7 +44,7 @@ impl NikaClient {
 
 #[derive(Debug)]
 pub enum NikaClientError {
-    Reqwest(reqwest::Error),
+    Request(reqwest::Error),
     Json(serde_json::Error),
     Regex(regex::Error),
     FilenameParsing,
@@ -55,7 +55,7 @@ impl Error for NikaClientError {}
 impl std::fmt::Display for NikaClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            NikaClientError::Reqwest(err) => err.fmt(f),
+            NikaClientError::Request(err) => err.fmt(f),
             NikaClientError::Regex(err) => err.fmt(f),
             NikaClientError::FilenameParsing => write!(f, "couldn't parse filename"),
             NikaClientError::Json(err) => err.fmt(f),
@@ -65,7 +65,7 @@ impl std::fmt::Display for NikaClientError {
 
 impl From<reqwest::Error> for NikaClientError {
     fn from(err: reqwest::Error) -> NikaClientError {
-        NikaClientError::Reqwest(err)
+        NikaClientError::Request(err)
     }
 }
 
