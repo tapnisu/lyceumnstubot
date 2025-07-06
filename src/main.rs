@@ -7,7 +7,6 @@ use lyceumnstubot::{
 };
 use regex::Regex;
 use teloxide::{
-    dispatching::dialogue::GetChatId,
     prelude::*,
     types::{InlineKeyboardButton, InlineKeyboardMarkup, Me, ParseMode},
     utils::command::BotCommands,
