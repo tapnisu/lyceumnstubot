@@ -26,7 +26,7 @@ impl NikaClient {
             .ok_or(NikaClientError::FilenameParsing)?
             .as_str();
 
-        let nika_script_url = format!("https://lyceum.nstu.ru/rasp/{}", filename);
+        let nika_script_url = format!("https://lyceum.nstu.ru/rasp/{filename}");
         let nika_script = reqwest::get(nika_script_url).await?.text().await?;
 
         let nika_json = nika_json_regex
