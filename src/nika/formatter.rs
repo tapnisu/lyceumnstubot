@@ -79,4 +79,72 @@ impl NikaFormatter {
         schedule.insert(0, format!("<i>Расписание для {class_name}:</i>"));
         schedule.join("\n\n")
     }
+
+    pub fn format_teacher_schedule(nika: &NikaResponse, teacher_id: &str) -> String {
+        let beginning_date = {
+            let beginning = nika.periods.clone().first_entry().unwrap().get().b.clone();
+            NaiveDate::parse_from_str(&beginning, "%d.%m.%Y").unwrap()
+        };
+
+        let mut schedule: Vec<String> = nika
+            .teach_schedule
+            .clone()
+            .first_entry()
+            .unwrap()
+            .get()
+            .get(teacher_id)
+            .unwrap()
+            .iter()
+            .map(|(lesson_id, teacher_schedule_entry)| {
+                println!("{teacher_schedule_entry:?}");
+
+                let subject = &nika.subjects[&teacher_schedule_entry.s];
+                let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
+                let lesson_times = nika.lesson_times.get(&lesson_number.to_string()).unwrap();
+
+                let room = teacher_schedule_entry
+                    .r
+                    .clone()
+                    .map_or("-".to_string(), |room_id| nika.rooms[&room_id].clone());
+
+                let classes =
+                    teacher_schedule_entry
+                        .c
+                        .clone()
+                        .map_or("-".to_string(), |class_ids| {
+                            class_ids
+                                .into_iter()
+                                .map(|class_id| nika.classes[&class_id].clone())
+                                .join(", ")
+                        });
+
+                let important_data = format!(
+                    "{room}: {subject} | {classes} <code>{}-{}</code>",
+                    lesson_times[0], lesson_times[1]
+                );
+
+                let entry = format!("{lesson_number}. {important_data}");
+
+                (lesson_id, entry)
+            })
+            .chunk_by(|(lesson_id, _)| {
+                lesson_id.chars().nth(0).unwrap().to_digit(10).unwrap() as usize
+            })
+            .into_iter()
+            .map(|(day_id, group)| {
+                let date = beginning_date + Duration::days(day_id.try_into().unwrap());
+
+                format!(
+                    "<b>{} / {}:</b>\n{}",
+                    nika.day_names[day_id - 1],
+                    date.format("%d.%m.%Y"),
+                    group.map(|(_, text_entry)| text_entry).join("\n")
+                )
+            })
+            .collect();
+
+        let class_name = nika.teachers.get(teacher_id).unwrap();
+        schedule.insert(0, format!("<i>Расписание для {class_name}:</i>"));
+        schedule.join("\n\n")
+    }
 }

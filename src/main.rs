@@ -175,21 +175,19 @@ async fn callback_handler(
             }
         }
     } else if let Some(caps) = teachers_re.captures(&query) {
-        if let Some(_teacher_id) = caps.get(1) {
-            todo!();
+        if let Some(teacher_id) = caps.get(1) {
+            let teacher_schedule =
+                NikaFormatter::format_teacher_schedule(&nika, teacher_id.as_str());
 
-            // let teacher_schedule =
-            //     NikaFormatter::format_teachers_schedule(&nika, teacher_id.as_str());
-
-            // if let Some(message) = q.regular_message() {
-            //     bot.edit_message_text(message.chat.id, message.id, teacher_schedule)
-            //         .parse_mode(ParseMode::Html)
-            //         .await?;
-            // } else if let Some(id) = q.inline_message_id {
-            //     bot.edit_message_text_inline(id, teacher_schedule)
-            //         .parse_mode(ParseMode::Html)
-            //         .await?;
-            // }
+            if let Some(message) = q.regular_message() {
+                bot.edit_message_text(message.chat.id, message.id, teacher_schedule)
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+            } else if let Some(id) = q.inline_message_id {
+                bot.edit_message_text_inline(id, teacher_schedule)
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+            }
         }
     } else if query == "classSchedule" {
         let classes_keyboard = {
