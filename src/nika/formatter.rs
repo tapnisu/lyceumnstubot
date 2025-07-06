@@ -96,8 +96,6 @@ impl NikaFormatter {
             .unwrap()
             .iter()
             .map(|(lesson_id, teacher_schedule_entry)| {
-                println!("{teacher_schedule_entry:?}");
-
                 let subject = &nika.subjects[&teacher_schedule_entry.s];
                 let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
                 let lesson_times = nika.lesson_times.get(&lesson_number.to_string()).unwrap();
