@@ -2,28 +2,20 @@ name: Test
 
 on: push
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  ubuntu-latest:
-    name: Ubuntu-latest
+  check:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - name: Sync node version and setup cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
+      - uses: actions/checkout@v4
+      # Don't forget to update `Cargo.toml`
+      - name: Setup rust 1.84.0
+        run: rustup toolchain install 1.84.0 --profile minimal --no-self-update
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
       - name: Build
-        run: pnpm build
-
-      - name: Lint
-        run: pnpm lint
+        run: cargo build --verbose
+      - name: Clippy
+        run: cargo clippy --verbose

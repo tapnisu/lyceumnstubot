@@ -1,24 +1,22 @@
-FROM node:20-alpine AS base
+FROM rust:1.86-alpine3.21 AS builder
 LABEL authors="tapnisu"
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+WORKDIR /usr/src/lyceumnstubot
 
-WORKDIR /app
+RUN apk update \
+    && apk upgrade --available \
+    && apk add --no-cache alpine-sdk libressl-dev
 
-COPY package.json pnpm-lock.yaml /app/
-RUN npm install --global corepack@latest && corepack enable && corepack prepare --activate
+COPY . .
+RUN cargo build --release
 
-FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+FROM alpine:3.21 AS runner
 
-FROM base AS build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-COPY . /app
-RUN pnpm run build
+RUN apk update \
+    && apk upgrade --available \
+    && apk add --no-cache ca-certificates \
+    && update-ca-certificates
 
-FROM base
-COPY --from=build /app/dist /app/dist
-COPY --from=prod-deps /app/node_modules /app/node_modules
+COPY --from=builder /usr/src/lyceumnstubot/target/release/lyceumnstubot /usr/local/bin/lyceumnstubot
 
-CMD [ "pnpm", "run", "start" ]
+CMD ["lyceumnstubot"]
