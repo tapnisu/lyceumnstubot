@@ -1,4 +1,4 @@
-use std::{env, error::Error, sync::Arc, time::Duration};
+use std::{env, error::Error, process::exit, sync::Arc, time::Duration};
 
 use dotenv::dotenv;
 use lyceumnstubot::{
@@ -7,6 +7,7 @@ use lyceumnstubot::{
 };
 use regex::Regex;
 use teloxide::{
+    dispatching::dialogue::GetChatId,
     prelude::*,
     types::{InlineKeyboardButton, InlineKeyboardMarkup, Me, ParseMode},
     utils::command::BotCommands,
@@ -21,16 +22,16 @@ struct GlobalData {
 }
 
 impl GlobalData {
-    async fn new() -> GlobalData {
-        let nika_response = NikaClient::get_data().await.unwrap();
-        let classes_keyboard = make_classes_keyboard(&nika_response).unwrap();
+    async fn new() -> anyhow::Result<GlobalData> {
+        let nika_response = NikaClient::get_data().await?;
+        let classes_keyboard = make_classes_keyboard(&nika_response)?;
         let teachers_keyboard = make_teachers_keyboard(&nika_response);
 
-        GlobalData {
+        Ok(GlobalData {
             nika_response,
             classes_keyboard,
             teachers_keyboard,
-        }
+        })
     }
 }
 
@@ -43,8 +44,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let bot_token = env::var("BOT_TOKEN")?;
     let bot = Bot::new(bot_token);
-
-    let global_data = Arc::new(RwLock::new(GlobalData::new().await));
+    let global_data = match GlobalData::new().await {
+        Ok(data) => Arc::new(RwLock::new(data)),
+        Err(err) => {
+            eprintln!("{err}");
+            exit(1);
+        }
+    };
 
     let mut interval = time::interval(Duration::from_secs(5 * 60));
     tokio::spawn({
@@ -53,8 +59,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         async move {
             loop {
                 interval.tick().await;
-                let mut data = global_data.write().await;
-                *data = GlobalData::new().await;
+                let mut rw_data = global_data.write().await;
+
+                match GlobalData::new().await {
+                    Ok(data) => *rw_data = data,
+                    Err(err) => eprintln!("{err}"),
+                }
             }
         }
     });
@@ -143,15 +153,23 @@ async fn callback_handler(
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     bot.answer_callback_query(&q.id).await?;
 
-    let classes_re = Regex::new(r"class (.+)").unwrap();
-    let teachers_re = Regex::new(r"teacher (.+)").unwrap();
+    let classes_re = Regex::new(r"class (.+)")?;
+    let teachers_re = Regex::new(r"teacher (.+)")?;
 
     let nika = {
         let data = global_data.read().await;
         data.nika_response.clone()
     };
 
-    let query = q.data.clone().unwrap();
+    let query = match q.data.clone() {
+        None => {
+            bot.answer_callback_query(q.id)
+                .text("Что-то пошло не так")
+                .await?;
+            return Ok(());
+        }
+        Some(query) => query,
+    };
 
     if let Some(caps) = classes_re.captures(&query) {
         if let Some(class_id) = caps.get(1) {
