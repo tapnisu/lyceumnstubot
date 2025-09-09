@@ -36,7 +36,13 @@ impl GlobalData {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    pretty_env_logger::init();
+    tracing_subscriber::fmt()
+        .with_max_level(if cfg!(debug_assertions) {
+            tracing::Level::DEBUG
+        } else {
+            tracing::Level::INFO
+        })
+        .init();
     log::info!("Starting command bot...");
 
     dotenv().ok();
@@ -52,6 +58,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let mut interval = time::interval(Duration::from_secs(5 * 60));
+    interval.tick().await;
+
     tokio::spawn({
         let global_data = global_data.clone();
 
