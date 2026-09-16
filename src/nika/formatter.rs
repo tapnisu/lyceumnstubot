@@ -156,8 +156,21 @@ mod tests {
         let nika = NikaClient::get_data().await?;
 
         for (class_id, class_name) in nika.classes.iter() {
+            println!("testing class \"{class_name}\"");
             let schedule = NikaFormatter::format_class_schedule(&nika, class_id);
-            assert!(!schedule.is_empty(), "format {class_name} schedule");
+            assert!(
+                !schedule.is_empty(),
+                "format class \"{class_name}\" schedule"
+            );
+        }
+
+        for (teacher_id, teacher_name) in nika.teachers.iter() {
+            println!("testing teacher \"{teacher_name}\"");
+            let schedule = NikaFormatter::format_teacher_schedule(&nika, teacher_id);
+            assert!(
+                !schedule.is_empty(),
+                "format teacher \"{teacher_name}\" schedule"
+            );
         }
 
         Ok(())
