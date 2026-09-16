@@ -95,7 +95,11 @@ impl NikaFormatter {
             .get(teacher_id)
             .unwrap()
             .iter()
-            .map(|(lesson_id, teacher_schedule_entry)| {
+            .filter_map(|(lesson_id, teacher_schedule_entry)| {
+                if teacher_schedule_entry.s == "M" {
+                    return None;
+                }
+
                 let subject = &nika.subjects[&teacher_schedule_entry.s];
                 let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
                 let lesson_times = nika.lesson_times.get(&lesson_number.to_string()).unwrap();
@@ -123,7 +127,7 @@ impl NikaFormatter {
 
                 let entry = format!("{lesson_number}. {important_data}");
 
-                (lesson_id, entry)
+                Some((lesson_id.clone(), entry))
             })
             .chunk_by(|(lesson_id, _)| {
                 lesson_id.chars().nth(0).unwrap().to_digit(10).unwrap() as usize
