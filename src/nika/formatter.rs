@@ -146,3 +146,20 @@ impl NikaFormatter {
         schedule.join("\n\n")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::nika::{client::NikaClient, formatter::NikaFormatter};
+
+    #[tokio::test]
+    async fn test_format() -> Result<(), Box<dyn std::error::Error>> {
+        let nika = NikaClient::get_data().await?;
+
+        for (class_id, class_name) in nika.classes.iter() {
+            let schedule = NikaFormatter::format_class_schedule(&nika, class_id);
+            assert!(!schedule.is_empty(), "format {class_name} schedule");
+        }
+
+        Ok(())
+    }
+}
