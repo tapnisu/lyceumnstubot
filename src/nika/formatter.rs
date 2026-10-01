@@ -14,50 +14,45 @@ impl NikaFormatter {
 
         let mut schedule: Vec<String> = nika
             .class_schedule
-            .clone()
-            .first_entry()
-            .unwrap()
-            .get()
-            .get(class_id)
-            .unwrap()
-            .iter()
+            .values()
+            .next()
+            .and_then(|classes| classes.get(class_id))
+            .into_iter()
+            .flatten()
             .map(|(lesson_id, class_schedule_entry)| {
                 let groups = class_schedule_entry.s.len();
                 let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
+                let mut entries: Vec<String> = vec![];
 
-                let entry = (0..groups)
-                    .map(|group_id| {
-                        let important_data = {
-                            if class_schedule_entry.r[group_id].is_empty()
-                                || class_schedule_entry.s[group_id].is_empty()
-                                || class_schedule_entry.t[group_id].is_empty()
-                            {
-                                "<b>нет занятий</b>".to_string()
-                            } else {
-                                let room = &nika.rooms[&class_schedule_entry.r[group_id]];
-                                let subject = &nika.subjects[&class_schedule_entry.s[group_id]];
-                                let teacher = &nika.teachers[&class_schedule_entry.t[group_id]];
-                                let lesson_times =
-                                    nika.lesson_times.get(&lesson_number.to_string()).unwrap();
+                for group_id in 0..groups {
+                    let important_data = if class_schedule_entry.r[group_id].is_empty()
+                        || class_schedule_entry.s[group_id].is_empty()
+                        || class_schedule_entry.t[group_id].is_empty()
+                    {
+                        "<b>нет занятий</b>".to_string()
+                    } else {
+                        let room = &nika.rooms[&class_schedule_entry.r[group_id]];
+                        let subject = &nika.subjects[&class_schedule_entry.s[group_id]];
+                        let teacher = &nika.teachers[&class_schedule_entry.t[group_id]];
+                        let lesson_times =
+                            nika.lesson_times.get(&lesson_number.to_string()).unwrap();
 
-                                format!(
-                                    "{room}: {subject} | {teacher} <code>{}-{}</code>",
-                                    lesson_times[0], lesson_times[1]
-                                )
-                            }
-                        };
+                        format!(
+                            "{room}: {subject} | {teacher} <code>{}-{}</code>",
+                            lesson_times[0], lesson_times[1]
+                        )
+                    };
 
-                        let tag = if groups == 1 {
-                            format!("{lesson_number}.")
-                        } else {
-                            format!("{lesson_number}. <i>(Груп.{})</i>", group_id + 1)
-                        };
+                    let tag = if groups == 1 {
+                        format!("{lesson_number}.")
+                    } else {
+                        format!("{lesson_number}. <i>(Груп.{})</i>", group_id + 1)
+                    };
 
-                        format!("{tag} {important_data}")
-                    })
-                    .join("\n");
+                    entries.push(format!("{tag} {important_data}"));
+                }
 
-                (lesson_id, entry)
+                (lesson_id, entries.join("\n"))
             })
             .chunk_by(|(lesson_id, _)| {
                 lesson_id.chars().nth(0).unwrap().to_digit(10).unwrap() as usize
@@ -88,18 +83,13 @@ impl NikaFormatter {
 
         let mut schedule: Vec<String> = nika
             .teach_schedule
-            .clone()
-            .first_entry()
-            .unwrap()
-            .get()
-            .get(teacher_id)
-            .unwrap()
-            .iter()
-            .filter_map(|(lesson_id, teacher_schedule_entry)| {
-                if teacher_schedule_entry.s == "M" {
-                    return None;
-                }
-
+            .values()
+            .next()
+            .and_then(|teachers| teachers.get(teacher_id))
+            .into_iter()
+            .flatten()
+            .filter(|(_, teacher_schedule_entry)| teacher_schedule_entry.s != "M")
+            .map(|(lesson_id, teacher_schedule_entry)| {
                 let subject = &nika.subjects[&teacher_schedule_entry.s];
                 let lesson_number = lesson_id.parse::<i32>().unwrap() % 100;
                 let lesson_times = nika.lesson_times.get(&lesson_number.to_string()).unwrap();
@@ -127,7 +117,7 @@ impl NikaFormatter {
 
                 let entry = format!("{lesson_number}. {important_data}");
 
-                Some((lesson_id.clone(), entry))
+                (lesson_id.clone(), entry)
             })
             .chunk_by(|(lesson_id, _)| {
                 lesson_id.chars().nth(0).unwrap().to_digit(10).unwrap() as usize
@@ -161,6 +151,14 @@ mod tests {
 
         for (class_id, class_name) in nika.classes.iter() {
             println!("testing class \"{class_name}\"");
+            println!(
+                "{:?}",
+                nika.class_schedule
+                    .clone()
+                    .values()
+                    .next()
+                    .and_then(|classes| classes.get(class_id))
+            );
             let schedule = NikaFormatter::format_class_schedule(&nika, class_id);
             assert!(
                 !schedule.is_empty(),
@@ -170,6 +168,14 @@ mod tests {
 
         for (teacher_id, teacher_name) in nika.teachers.iter() {
             println!("testing teacher \"{teacher_name}\"");
+            println!(
+                "{:?}",
+                nika.teach_schedule
+                    .clone()
+                    .values()
+                    .next()
+                    .and_then(|teachers| teachers.get(teacher_id))
+            );
             let schedule = NikaFormatter::format_teacher_schedule(&nika, teacher_id);
             assert!(
                 !schedule.is_empty(),
